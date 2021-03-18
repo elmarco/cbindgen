@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use crate::bindgen::config::{Config, Language};
 use crate::bindgen::ir::{
-    Constant, Function, ItemContainer, ItemMap, Path as BindgenPath, Static, Struct,
+    Constant, Function, GObject, ItemContainer, ItemMap, Path as BindgenPath, Static, Struct,
 };
 use crate::bindgen::writer::{Source, SourceWriter};
 
@@ -27,6 +27,7 @@ pub struct Bindings {
     constants: Vec<Constant>,
     items: Vec<ItemContainer>,
     functions: Vec<Function>,
+    gobjects: Vec<GObject>,
 }
 
 #[derive(PartialEq)]
@@ -43,6 +44,7 @@ impl Bindings {
         globals: Vec<Static>,
         items: Vec<ItemContainer>,
         functions: Vec<Function>,
+        gobjects: Vec<GObject>,
     ) -> Bindings {
         Bindings {
             config,
@@ -52,6 +54,7 @@ impl Bindings {
             constants,
             items,
             functions,
+            gobjects,
         }
     }
 
@@ -280,6 +283,7 @@ impl Bindings {
                 ItemContainer::Union(ref x) => x.write(&self.config, &mut out),
                 ItemContainer::OpaqueItem(ref x) => x.write(&self.config, &mut out),
                 ItemContainer::Typedef(ref x) => x.write(&self.config, &mut out),
+                ItemContainer::GObject(..) => unreachable!(),
             }
             out.new_line();
         }
@@ -290,6 +294,12 @@ impl Bindings {
                 constant.write(&self.config, &mut out, None);
                 out.new_line();
             }
+        }
+
+        for gobject in &self.gobjects {
+            out.new_line_if_not_start();
+            gobject.write(&self.config, &mut out, None);
+            out.new_line();
         }
 
         if !self.functions.is_empty() || !self.globals.is_empty() {

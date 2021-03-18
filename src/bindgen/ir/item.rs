@@ -9,7 +9,8 @@ use crate::bindgen::config::Config;
 use crate::bindgen::declarationtyperesolver::DeclarationTypeResolver;
 use crate::bindgen::dependencies::Dependencies;
 use crate::bindgen::ir::{
-    AnnotationSet, Cfg, Constant, Enum, OpaqueItem, Path, Static, Struct, Type, Typedef, Union,
+    AnnotationSet, Cfg, Constant, Enum, GObject, OpaqueItem, Path, Static, Struct, Type, Typedef,
+    Union,
 };
 use crate::bindgen::library::Library;
 use crate::bindgen::monomorph::Monomorphs;
@@ -51,6 +52,7 @@ pub enum ItemContainer {
     Union(Union),
     Enum(Enum),
     Typedef(Typedef),
+    GObject(GObject),
 }
 
 impl ItemContainer {
@@ -63,6 +65,7 @@ impl ItemContainer {
             ItemContainer::Union(ref x) => x,
             ItemContainer::Enum(ref x) => x,
             ItemContainer::Typedef(ref x) => x,
+            ItemContainer::GObject(ref x) => x,
         }
     }
 }

@@ -20,11 +20,51 @@ extern crate syn;
 extern crate toml;
 
 use clap::{App, Arg, ArgMatches};
+use heck::ShoutySnakeCase;
 
 mod bindgen;
 mod logging;
 
 use crate::bindgen::{Bindings, Builder, Cargo, Error};
+
+#[derive(Debug, Clone, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
+#[serde(default)]
+struct Config {
+    /// A list of additional system includes to put at the beginning of the generated header
+    pub sys_includes: Vec<String>,
+    /// Package namespace / prefix
+    pub namespace: Option<String>,
+}
+
+impl Config {
+    #[allow(unused)]
+    fn from_file<P: AsRef<Path>>(file_name: P) -> Result<Config, String> {
+        let config_text = std::fs::read_to_string(file_name.as_ref()).map_err(|_| {
+            format!(
+                "Couldn't open config file: {}.",
+                file_name.as_ref().display()
+            )
+        })?;
+
+        match toml::from_str::<Config>(&config_text) {
+            Ok(x) => Ok(x),
+            Err(e) => Err(format!("Couldn't parse config file: {}.", e)),
+        }
+    }
+
+    #[allow(unused)]
+    fn from_root_or_default<P: AsRef<Path>>(root: P) -> Config {
+        let c = root.as_ref().join("gbindgen.toml");
+
+        if c.exists() {
+            Config::from_file(c).unwrap()
+        } else {
+            Config::default()
+        }
+    }
+}
 
 fn load_bindings<'a>(input: &Path, matches: &ArgMatches<'a>) -> Result<Bindings, Error> {
     // We have to load a whole crate, so we use cargo to gather metadata
@@ -37,7 +77,46 @@ fn load_bindings<'a>(input: &Path, matches: &ArgMatches<'a>) -> Result<Bindings,
         matches.value_of("metadata").map(Path::new),
     )?;
 
+    let binding_crate_dir = lib.find_crate_dir(&lib.binding_crate_ref());
+
+    let config = if let Some(binding_crate_dir) = binding_crate_dir {
+        Config::from_root_or_default(&binding_crate_dir)
+    } else {
+        // This shouldn't happen
+        Config::from_root_or_default(input)
+    };
+
+    let mut bindgen_config = bindgen::Config::default();
+    bindgen_config.tab_width = 4;
+    bindgen_config.sys_includes = config.sys_includes;
+    let version = lib
+        .binding_crate_ref()
+        .version
+        .and_then(|v| semver::Version::parse(&v).ok()).expect("Failed to parse crate version");
+    bindgen_config.after_includes = Some(format!(r#"
+#define {ns}_MAJOR_VERSION {major}
+#define {ns}_MINOR_VERSION {minor}
+#define {ns}_MICRO_VERSION {micro}
+
+#define {ns}_CHECK_VERSION(major,minor,micro) \
+    ({ns}_MAJOR_VERSION > (major) ||                                   \
+     ({ns}_MAJOR_VERSION == (major) && {ns}_MINOR_VERSION > (minor)) || \
+     ({ns}_MAJOR_VERSION == (major) && {ns}_MINOR_VERSION == (minor) && \
+      {ns}_MICRO_VERSION >= (micro)))
+"#,
+        ns = config.namespace.unwrap().to_shouty_snake_case(),
+        major = version.major,
+        minor = version.minor,
+        micro = version.patch
+    ));
+
     Builder::new()
+        .with_config(bindgen_config)
+        .with_gobject(true)
+        .with_header(&format!(
+            "/* GObject C binding from Rust {} project, generated with gbindgen: DO NOT EDIT. */",
+            lib.binding_crate_name()
+        ))
         .with_cargo(lib)
         .generate()
 }

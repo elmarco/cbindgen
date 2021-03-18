@@ -32,6 +32,7 @@ toml = "0.5"
 proc-macro2 = "1"
 quote = "1"
 heck = "0.3"
+semver = { version = "0.11.0", optional = true }
 
 [dependencies.syn]
 version = "1.0.3"
@@ -55,7 +56,7 @@ required-features = ["clap"]
 name = "gbindgen"
 path = "src/gmain.rs"
 doc = false
-required-features = ["clap", "gobject"]
+required-features = ["clap", "gobject", "semver"]
 
 [lib]
 name = "cbindgen"

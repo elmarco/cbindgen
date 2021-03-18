@@ -6,7 +6,7 @@ use std::path;
 
 use crate::bindgen::bindings::Bindings;
 use crate::bindgen::cargo::Cargo;
-use crate::bindgen::config::{Braces, Config, Language, Profile, Style};
+use crate::bindgen::config::{Braces, Config, Language, Profile, RenameRule, Style};
 use crate::bindgen::error::Error;
 use crate::bindgen::library::Library;
 use crate::bindgen::parser::{self, Parse};
@@ -135,6 +135,15 @@ impl Builder {
     #[allow(unused)]
     pub fn with_language(mut self, language: Language) -> Builder {
         self.config.language = language;
+        self
+    }
+
+    #[allow(unused)]
+    pub fn with_gobject(mut self, gobject: bool) -> Builder {
+        self.config.gobject = gobject;
+        self.config.cpp_compat = true;
+        self.config.enumeration.rename_variants = RenameRule::QualifiedScreamingSnakeCase;
+        self.config.language = Language::C;
         self
     }
 
@@ -325,7 +334,7 @@ impl Builder {
         let mut result = Parse::new();
 
         if self.std_types {
-            result.add_std_types();
+            result.add_std_types(&self.config);
         }
 
         for x in &self.srcs {
@@ -359,6 +368,7 @@ impl Builder {
             result.opaque_items,
             result.typedefs,
             result.functions,
+            result.gobjects,
         )
         .generate()
     }

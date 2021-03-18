@@ -940,6 +940,8 @@ pub struct Config {
     pub pointer: PtrConfig,
     /// Configuration options specific to Cython.
     pub cython: CythonConfig,
+    /// Enable GObject generation
+    pub gobject: bool,
 }
 
 impl Default for Config {
@@ -980,6 +982,7 @@ impl Default for Config {
             documentation_style: DocumentationStyle::Auto,
             pointer: PtrConfig::default(),
             cython: CythonConfig::default(),
+            gobject: false,
         }
     }
 }
@@ -1013,6 +1016,7 @@ impl Config {
         }
     }
 
+    #[allow(unused)]
     pub fn from_file<P: AsRef<StdPath>>(file_name: P) -> Result<Config, String> {
         let config_text = fs::read_to_string(file_name.as_ref()).map_err(|_| {
             format!(
@@ -1027,6 +1031,7 @@ impl Config {
         }
     }
 
+    #[allow(unused)]
     pub fn from_root_or_default<P: AsRef<StdPath>>(root: P) -> Config {
         let c = root.as_ref().join("cbindgen.toml");
 
