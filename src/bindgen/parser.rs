@@ -485,7 +485,11 @@ impl Parse {
                     if has_assoc_const {
                         impls_with_assoc_consts.push(item_impl);
                     }
-
+                    if let Some(ref trait_) = item_impl.trait_ {
+                        if trait_.1.is_ident("ObjectSubclass") {
+                            self.load_syn_gobject_subclass(item_impl);
+                        }
+                    }
                     if let syn::Type::Path(ref path) = *item_impl.self_ty {
                         if let Some(type_name) = path.path.get_ident() {
                             for method in item_impl.items.iter().filter_map(|item| match item {
@@ -961,6 +965,45 @@ impl Parse {
                 );
             }
         }
+    }
+
+    fn load_syn_gobject_subclass(&mut self, input: &syn::ItemImpl) {
+        let mut name = None;
+        let mut class = None;
+        let mut parent_type = None;
+        let mut has_instance = false;
+        for item in &input.items {
+            match item {
+                syn::ImplItem::Type(type_) => {
+                    let name = type_.ident.to_string();
+                    if name == "Instance" {
+                        has_instance = true;
+                    } else if name == "Class" {
+                        if let syn::Type::Path(syn::TypePath { ref path, .. }) = type_.ty {
+                            if let Some(ident) = path.get_ident() {
+                                class = Some(ident.to_string())
+                            }
+                        }
+                    } else if name == "ParentType" {
+                        if let syn::Type::Path(syn::TypePath { ref path, .. }) = type_.ty {
+                            if let Some(ident) = path.get_ident() {
+                                parent_type = Some(ident.to_string())
+                            }
+                        }
+                    }
+                }
+                syn::ImplItem::Const(const_) => {
+                    let const_name = const_.ident.to_string();
+                    if const_name == "NAME" {
+                        if let syn::Expr::Lit(syn::ExprLit { lit: syn::Lit::Str(ref lit), .. } ) = const_.expr {
+                            name = Some(lit.value());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        //info!("GObject {} {} {}", name, class, parent_type);
     }
 
     fn load_builtin_macro(
