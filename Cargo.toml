@@ -49,6 +49,12 @@ path = "src/main.rs"
 doc = false
 required-features = ["clap"]
 
+[[bin]]
+name = "gbindgen"
+path = "src/gmain.rs"
+doc = false
+required-features = ["clap"]
+
 [lib]
 name = "cbindgen"
 path = "src/lib.rs"
