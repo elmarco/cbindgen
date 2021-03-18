@@ -940,6 +940,8 @@ pub struct Config {
     pub pointer: PtrConfig,
     /// Configuration options specific to Cython.
     pub cython: CythonConfig,
+    /// Enable GObject generation
+    pub gobject: bool,
 }
 
 impl Default for Config {
@@ -980,6 +982,7 @@ impl Default for Config {
             documentation_style: DocumentationStyle::Auto,
             pointer: PtrConfig::default(),
             cython: CythonConfig::default(),
+            gobject: false,
         }
     }
 }

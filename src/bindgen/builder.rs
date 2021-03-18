@@ -139,6 +139,12 @@ impl Builder {
     }
 
     #[allow(unused)]
+    pub fn with_gobject(mut self, gobject: bool) -> Builder {
+        self.config.gobject = gobject;
+        self
+    }
+
+    #[allow(unused)]
     pub fn with_style(mut self, style: Style) -> Builder {
         self.config.style = style;
         self
@@ -325,7 +331,7 @@ impl Builder {
         let mut result = Parse::new();
 
         if self.std_types {
-            result.add_std_types();
+            result.add_std_types(&self.config);
         }
 
         for x in &self.srcs {
@@ -359,6 +365,7 @@ impl Builder {
             result.opaque_items,
             result.typedefs,
             result.functions,
+            result.gobjects,
         )
         .generate()
     }

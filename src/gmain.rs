@@ -5,7 +5,6 @@
 use std::env;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 extern crate clap;
 #[macro_use]
@@ -25,7 +24,7 @@ use clap::{App, Arg, ArgMatches};
 mod bindgen;
 mod logging;
 
-use crate::bindgen::{Bindings, Builder, Cargo, Config, Error};
+use crate::bindgen::{Bindings, Builder, Cargo, Config, Error, Language};
 
 fn load_bindings<'a>(input: &Path, matches: &ArgMatches<'a>) -> Result<Bindings, Error> {
     // We have to load a whole crate, so we use cargo to gather metadata
@@ -38,10 +37,13 @@ fn load_bindings<'a>(input: &Path, matches: &ArgMatches<'a>) -> Result<Bindings,
         matches.value_of("metadata").map(Path::new),
     )?;
 
-    let config = Config::from_root_or_default(input);
+    let mut config = Config::default();
+    config.cpp_compat = true;
 
     Builder::new()
         .with_config(config)
+        .with_language(Language::C)
+        .with_gobject(true)
         .with_cargo(lib)
         .generate()
 }
