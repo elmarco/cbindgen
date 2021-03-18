@@ -16,6 +16,7 @@ edition = "2018"
 exclude = [
   "tests/profile.rs", # Test relies in a sub-crate, see https://github.com/rust-lang/cargo/issues/9017
 ]
+default-run = "cbindgen"
 
 [badges]
 travis-ci = { repository = "eqrion/cbindgen" }
@@ -42,12 +43,19 @@ serial_test = "0.5.0"
 
 [features]
 default =  ["clap"]
+gobject = []
 
 [[bin]]
 name = "cbindgen"
 path = "src/main.rs"
 doc = false
 required-features = ["clap"]
+
+[[bin]]
+name = "gbindgen"
+path = "src/gmain.rs"
+doc = false
+required-features = ["clap", "gobject"]
 
 [lib]
 name = "cbindgen"
