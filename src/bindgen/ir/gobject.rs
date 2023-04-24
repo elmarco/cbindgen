@@ -20,7 +20,7 @@ pub enum GType {
     Object {
         instance: Option<Type>,
         class: Option<Type>,
-        parent_type: Type,
+        parent_type: Option<Type>,
     },
     Interface {
         type_: Type,
@@ -236,7 +236,7 @@ impl GObject {
         let gtype = GType::Object {
             instance,
             class,
-            parent_type: parent_type.unwrap(),
+            parent_type: parent_type,
         };
 
         Ok(Self::new(
@@ -280,7 +280,9 @@ impl Item for GObject {
                 instance,
                 class,
             } => {
-                parent_type.add_dependencies(library, out);
+                if let Some(parent_type) = parent_type {
+                    parent_type.add_dependencies(library, out);
+                }
                 if let Some(instance) = instance {
                     instance.add_dependencies(library, out);
                 }
@@ -292,7 +294,7 @@ impl Item for GObject {
                 type_.add_dependencies(library, out);
             }
             GType::Boxed => {}
-            GType::Enum { type_ } | GType::Error { type_ }=> {
+            GType::Enum { type_ } | GType::Error { type_ } => {
                 type_.add_dependencies(library, out);
             }
         }
@@ -327,7 +329,9 @@ impl Item for GObject {
                 instance,
                 class,
             } => {
-                parent_type.resolve_declaration_types(resolver);
+                if let Some(parent_type) = parent_type {
+                    parent_type.resolve_declaration_types(resolver);
+                }
                 if let Some(instance) = instance {
                     instance.resolve_declaration_types(resolver);
                 }
@@ -370,7 +374,7 @@ impl GObject {
         let snake = self.name.to_snake_case();
         let type_up = format!("{}_TYPE_{}", prefix_up, name_up);
 
-        if matches!(self.gtype, GType::Error { ..  }) {
+        if matches!(self.gtype, GType::Error { .. }) {
             write!(
                 out,
                 "#define {}_{}                    ({}_quark())",
